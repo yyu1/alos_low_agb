@@ -3,6 +3,7 @@
 
 import numpy as np
 import sys
+import math
 
 #ALOS function definitions
 def trop_dry_broad( hv ):
@@ -32,8 +33,8 @@ def apply_value( original_array, index, new_value ):
 	index_counter = 0
 	for i in range(0,index.size):
 		if (index[i]):
-			if (new_value[index_counter] < 50):
-				original_array[i] = math.floor(new_value[index_counter]/10+0.5)
+			if ((new_value[index_counter] < 50) and (original_array[i] < 50)):
+				original_array[i] = math.floor(new_value[index_counter]*10+0.5)
 			index_counter += 1
 		
 
