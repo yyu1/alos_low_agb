@@ -7,7 +7,7 @@ import math
 
 #ALOS function definitions
 def trop_dry_broad( hv ):
-	return ne.evaluate(1.564*math.exp(77.591*hv))
+	return 1.564*math.exp(77.591*hv)
 
 def trop_shrub( hv ):
 	return 1.564*math.exp(77.591*hv)
@@ -46,16 +46,16 @@ ydim = 159600
 #block_pixels = np.int64(ydim/100)*xdim
 block_pixels = xdim
 
-in_agb_file = '/Volumes/WD2TB/100m/output/v6/global_maxent_agb_combined_v6.int'
+in_agb_file = '/dataraid/global/global_maxent_agb_combined_v6.int'
 agb_type = np.int16
-in_hv_file = '/Volumes/WD2TB/100m/alos/alos_2007_global_3sec_hv_cut_landsatfill.int'
+in_hv_file = '/dataraid/global/alos_2007_global_3sec_hv_cut_landsatfill.int'
 hv_type = np.int16
-in_globcover_file = '/Volumes/WD2TB/100m/globcover/globcover_2006_mod100m_global.byt'
+in_globcover_file = '/dataraid/global/globcover_2006_mod100m_global.byt'
 globcover_type = np.uint8
-in_biome_file = '/Volumes/WD2TB/100m/biome/wwf_14biome_class_mod100m.byt'
+in_biome_file = '/dataraid/global/wwf_14biome_mod100m_global.byt'
 biome_type = np.uint8
 
-out_agb_file = '/Volumes/WD2TB/100m/output/v6/global_maxent_agb_combined_v6_alos_lowagb.int'
+out_agb_file = '/dataraid/global/global_maxent_agb_combined_v6_alos_lowagb.int'
 
 #----------------
 
