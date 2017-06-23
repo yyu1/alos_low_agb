@@ -54,8 +54,10 @@ in_globcover_file = '/dataraid/global/globcover_2006_mod100m_global.byt'
 globcover_type = np.uint8
 in_biome_file = '/dataraid/global/wwf_14biome_mod100m_global.byt'
 biome_type = np.uint8
+in_fnf_file = '/dataraid/global/alos_2015_global_3sec_fnf.byt'
+fnf_type = np.uint8
 
-out_agb_file = '/dataraid/global/global_maxent_agb_combined_v6_alos_lowagb.int'
+out_agb_file = '/dataraid/global/global_maxent_agb_combined_v6_alos_lowagb_zeroed.int'
 
 #----------------
 
@@ -65,6 +67,7 @@ fp_agb_in = open(in_agb_file, 'rb')
 fp_hv_in = open(in_hv_file, 'rb')
 fp_globcover_in = open(in_globcover_file, 'rb')
 fp_biome_in = open(in_biome_file, 'rb')
+fp_fnf_in = open(in_fnf_file, 'rb')
 
 #Open file for writing
 fp_agb_out = open(out_agb_file, 'wb')
@@ -89,6 +92,7 @@ for iBlock in range(0,ydim):
 	hv_block = np.fromfile(fp_hv_in, dtype = hv_type, count = block_pixels)
 	globcover_block = np.fromfile(fp_globcover_in, dtype = globcover_type, count = block_pixels)
 	biome_block = np.fromfile(fp_biome_in, dtype = biome_type, count = block_pixels)
+        fnf_block = np.fromfile(fp_fnf_in, dtype = fnf_type, count = block_pixels)
 
 	#-------Class masks
 	index110 = (globcover_block == 110)
@@ -107,24 +111,28 @@ for iBlock in range(0,ydim):
 	index_biome_mediwoodland = (biome_block == 12)
 
 	
-
+        lowagb_mask = np.zeroes(xdim, dtype=np.bool)
 
 	#-------Tropical Dry Broadleaf
 	index = np.logical_and(index_biometropdrybroad, index1236)
 	hv_agb = vfunc_trop_dry_broad(hv_block[index].astype(np.float64)/10000)
 	apply_value(agb_block,index,hv_agb)
+        lowagb_mask = np.logical_or(zero_mask, index)
 
 	#-------Tropical shrubland
 	index = np.logical_and(index_biometropshrub, index123)
 	hv_agb = vfunc_trop_shrub(hv_block[index].astype(np.float64)/10000)
 	apply_value(agb_block,index,hv_agb)
+        lowagb_mask = np.logical_or(zero_mask, index)
 
 	#-------Mediterranean Woodland
 	index = np.logical_and(index_biome_mediwoodland,index1236)
 	hv_agb = vfunc_med_woodland(hv_block[index].astype(np.float64)/10000)
 	apply_value(agb_block,index,hv_agb)
+        lowagb_mask = np.logical_or(zero_mask, index)
 
 	borealindex = np.logical_and(index_biomeboreal,index7090)
+        lowagb_mask = np.logical_or(zero_mask, borealindex)
 	#-------America Boreal
 	index = np.logical_and(borealindex,index_america)
 	hv_agb = vfunc_america_boreal(hv_block[index].astype(np.float64)/10000)
@@ -134,6 +142,11 @@ for iBlock in range(0,ydim):
 	index = np.logical_and(borealindex,index_eurasia)
 	hv_agb = vfunc_eurasia_boreal(hv_block[index].astype(np.float64)/10000)
 	apply_value(agb_block,index,hv_agb)
+
+
+        #----zero non forest and non-hv generated pixels
+        zero_mask = np.logical_and(np.logical_not(lowagb_mask),np.logical_not(fnf_block))
+        agb_block[zero_mask] = 0
 
 	#write out to file
 	agb_block.tofile(fp_agb_out)
