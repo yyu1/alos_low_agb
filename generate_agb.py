@@ -20,7 +20,7 @@ def america_boreal( hv ):
 	return numexpr.evaluate('2755.1*(hv**1.2239)')
 
 def eurasia_boreal( hv ):
-	return numexpr.evaluate('3004.5*pow(hv**1.2693)')
+	return numexpr.evaluate('3004.5*(hv**1.2693)')
 
 def asia_trop_moist(hv):
     return numexpr.evaluate('exp((1/0.25854)*log(hv/0.020863))')
