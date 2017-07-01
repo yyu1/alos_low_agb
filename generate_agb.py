@@ -176,7 +176,7 @@ def replace_low_value( agb_array, fnf_array, globcover_array, biome_array, hv_ar
     apply_value(agb_array, index, hv_agb)
 
     #Temperate Broadleaf/Mixed
-    index = numexpr.evaluate('((globcover_array == 50) | (globcover_array == 60)) & (biome_array == 4)a')
+    index = numexpr.evaluate('((globcover_array == 50) | (globcover_array == 60)) & (biome_array == 4)')
     index_equation = numexpr.evaluate('(index_equation | index)')
     hv_agb = temp_broad(hv_array[index])
     apply_value(agb_array, index, hv_agb)
