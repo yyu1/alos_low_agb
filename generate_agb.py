@@ -53,13 +53,16 @@ def apply_value(original_value, index, new_value):
         print("Error when applying value, number of True in index does not equal number of new values, quiting")
         sys.exit()
 
-    index_counter = 0
-    for i in range(0,index.size):
-        if (index[i]):
-            if ((new_value[index_counter] < 50) and (original_array[i] < 500)):
-                original_array[i] = math.floor(new_value[index_counter]*10+0.5)
-                index_counter += 1
-		
+    replace_values = original_value[index]
+    change_index = numexpr.evaluate('(replace_values < 500) & (new_value < 50)')
+
+    new_value = numexpr.evaluate('new_value * 10 + 0.5')
+    replace_values[change_index] = new_value[change_index]
+
+    original_value[index] = replace_values
+
+
+
 #Settings--------
 xdim = 432000
 ydim = 159600
