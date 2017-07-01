@@ -4,25 +4,60 @@
 import numpy as np
 import sys
 import math
+import numexpr
 
 #ALOS function definitions
 def trop_dry_broad( hv ):
-	return 1.564*math.exp(77.591*hv)
+	return numexpr.evaluate('1.564*exp(77.591*hv)')
 
 def trop_shrub( hv ):
-	return 1.564*math.exp(77.591*hv)
+	return numexpr.evaluate('1.564*exp(77.591*hv)')
 
 def med_woodland( hv ):
-	return 272.97*math.pow(hv,0.41192)
+	return numexpr.evaluate('272.97*(hv**0.41192)')
 
 def america_boreal( hv ):
-	return 2755.1*math.pow(hv,1.2239)
+	return numexpr.evaluate('2755.1*(hv**1.2239)')
 
 def eurasia_boreal( hv ):
-	return 3004.5*math.pow(hv,1.2693)
+	return numexpr.evaluate('3004.5*pow(hv**1.2693)')
 
-def apply_value( original_array, index, new_value ):
-	nonzerocount = np.count_nonzero(index)
+def asia_trop_moist(hv):
+    return numexpr.evaluate('exp((1/0.25854)*log(hv/0.020863))')
+
+def africa_trop_moist(hv):
+    return numexpr.evaluate('7226.4 * (hv**1.2088)')
+
+def america_trop_moist(hv):
+    return numexpr.evaluate('exp((1/0.34334)*log(hv/0.015335))')
+
+def temp_broad(hv):
+    return numexpr.evaluate('418.62 * (hv**0.51193)')
+
+def temp_conifer(hv):
+    return numexpr.evaluate('exp((1/0.17064)*log(hv/0.033017))')
+
+def fresh_flooded(hv):
+    return numexpr.evaluate('1532.1 * (hv**0.92788)')
+
+def saline_flooded(hv):
+    return numexpr.evaluate('-4.4668 + 1120.9 * hv')
+
+def replace_low_value( agb_array, fnf_array, globcover_array, biome_array, hv_array):
+	forest_index = (fnf_array > 0)
+	nonforest_index = np.logical_not(forest_index)
+	less50index = (agb_array < 500)   #original values are AGB * 10, so 50 Mg/ha is 500
+	more50index = np.logical_not(less50index)
+
+	#first set all fnf=0 to 0,
+	#then apply equation over all max<50, this will be equivalent logic of:
+	#  FNF > 0 and max < 50 -> apply equation
+	#  FNF = 0 and max < 50 -> apply equation if there is equation
+	#  FNF = 0 and max > 50 -> set = 0
+
+	agb_array[nonforest_index] = 0
+
+def apply_value(original
 	if (nonzerocount == 0):
 		return
 	
@@ -73,12 +108,6 @@ fp_fnf_in = open(in_fnf_file, 'rb')
 fp_agb_out = open(out_agb_file, 'wb')
 
 
-#vectorize functions
-vfunc_trop_dry_broad = np.vectorize(trop_dry_broad, otypes=[np.float64])
-vfunc_trop_shrub = np.vectorize(trop_shrub, otypes=[np.float64])
-vfunc_med_woodland = np.vectorize(med_woodland, otypes=[np.float64])
-vfunc_america_boreal = np.vectorize(america_boreal, otypes=[np.float64])
-vfunc_eurasia_boreal = np.vectorize(eurasia_boreal, otypes=[np.float64])
 
 #construct mask arrays for eurasia and north america for boreal
 index_america = np.zeros(xdim,dtype=np.bool)
@@ -98,7 +127,10 @@ for iBlock in range(0,ydim):
 	index110 = (globcover_block == 110)
 	index120 = (globcover_block == 120)
 	index130 = (globcover_block == 130)
+	index20 = (globcover_block == 20)
+	index30 = (globcover_block == 30)
 	index123 = np.logical_or(np.logical_or(index110,index120), index130)
+	index123crop = np.logical_or(np.logical_or(index20,index30),index123)
 
 	index7090 = np.logical_or((globcover_block == 70),(globcover_block == 90))
 
@@ -120,7 +152,8 @@ for iBlock in range(0,ydim):
 	lowagb_mask = np.logical_or(lowagb_mask, index)
 
 	#-------Tropical shrubland
-	index = np.logical_and(index_biometropshrub, index123)
+	#index = np.logical_and(index_biometropshrub, index123)
+	index = np.logical_and(index_biometropshrub, index123crop)
 	hv_agb = vfunc_trop_shrub(hv_block[index].astype(np.float64)/10000)
 	apply_value(agb_block,index,hv_agb)
 	lowagb_mask = np.logical_or(lowagb_mask, index)
