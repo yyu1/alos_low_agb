@@ -43,43 +43,29 @@ def fresh_flooded(hv):
 def saline_flooded(hv):
     return numexpr.evaluate('-4.4668 + 1120.9 * hv')
 
-def replace_low_value( agb_array, fnf_array, globcover_array, biome_array, hv_array):
-	forest_index = (fnf_array > 0)
-	nonforest_index = np.logical_not(forest_index)
-	less50index = (agb_array < 500)   #original values are AGB * 10, so 50 Mg/ha is 500
-	more50index = np.logical_not(less50index)
+def apply_value(original_value, index, new_value):
+    nonzerocount = np.count_nonzero(index)
 
-	#first set all fnf=0 to 0,
-	#then apply equation over all max<50, this will be equivalent logic of:
-	#  FNF > 0 and max < 50 -> apply equation
-	#  FNF = 0 and max < 50 -> apply equation if there is equation
-	#  FNF = 0 and max > 50 -> set = 0
-
-	agb_array[nonforest_index] = 0
-
-def apply_value(original
-	if (nonzerocount == 0):
-		return
+    if (nonzerocount == 0):
+        return
 	
-	if (nonzerocount != new_value.size):
-		print("Error when applying value, number of True in index does not equal number of new values, quiting")
-		sys.exit()
+    if (nonzerocount != new_value.size):
+        print("Error when applying value, number of True in index does not equal number of new values, quiting")
+        sys.exit()
 
-	index_counter = 0
-	for i in range(0,index.size):
-		if (index[i]):
-			if ((new_value[index_counter] < 50) and (original_array[i] < 500)):
-				original_array[i] = math.floor(new_value[index_counter]*10+0.5)
-			index_counter += 1
+    index_counter = 0
+    for i in range(0,index.size):
+        if (index[i]):
+            if ((new_value[index_counter] < 50) and (original_array[i] < 500)):
+                original_array[i] = math.floor(new_value[index_counter]*10+0.5)
+                index_counter += 1
 		
-
-
 #Settings--------
 xdim = 432000
 ydim = 159600
 
-#block_pixels = np.int64(ydim/100)*xdim
-block_pixels = xdim
+block_pixels = np.int64(ydim//100)*xdim
+#block_pixels = xdim
 
 in_agb_file = '/dataraid/global/global_maxent_agb_combined_v6.int'
 agb_type = np.int16
@@ -96,6 +82,132 @@ out_agb_file = '/dataraid/global/global_maxent_agb_combined_v6_alos_lowagb_zeroe
 
 #----------------
 
+#construct mask arrays for eurasia and north america for boreal
+index_america = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_america[:,:xdim*140//360] = 1
+index_eurasia = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_eurasia[:,xdim*140//360:] = 1
+
+#construct mask arrays for tropical america, africa, and asia
+
+index_trop_america = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_trop_america[:,:xdim*150//360] = 1
+
+index_trop_africa = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_trop_africa[:,xdim*150//360:xdim*240//360] = 1
+
+index_trop_asia = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_trop_asia[:,xdim*240//360:] = 1
+
+
+def replace_low_value( agb_array, fnf_array, globcover_array, biome_array, hv_array):
+    forest_index = numexpr.evaluate('(fnf_array > 0)')
+    nonforest_index = np.logical_not(forest_index)
+    more50index = numexpr.evaluate('(agb_array >= 500)')  #agb value is actual value * 10
+    less50index = np.logical_not(more50index)
+
+    # apply equation over all max<50, then set max > 50 and FNF = 0 to 0 this will be equivalent logic of:
+    #  FNF > 0 and max < 50 -> apply equation
+    #  FNF = 0 and max < 50 -> apply equation if there is equation
+    #  FNF = 0 and max > 50 -> set = 0
+    # But MAKE SURE max < 50 and > 50 index is obtained before zeroing FNF=0
+
+    #create indices for landcover types
+    index123crop = numexpr.evaluate('(globcover_array == 110) | (globcover_array == 120) | (globcover_array == 130) | (globcover_array == 20) | (globcover_array == 30)')
+    index7090 = numexpr.evaluate('(globcover_array == 70) | (globcover_array == 90)')
+    index1236crop = numexpr.evaluate('index123crop | (globcover_array == 60)')
+
+    index7090 = numexpr.evaluate('(globcover_array == 70) | (globcover_array == 90)')
+
+    index40 = numexpr.evaluate('(globcover_array == 40)')
+
+    index_biomeboreal = numexpr.evaluate('(biome_array == 6)')
+    index_biometropdrybroad = numexpr.evaluate('(biome_array == 2)')
+    index_biometropshrub = numexpr.evaluate('(biome_array == 7)')
+    index_biome_mediwoodland = numexpr.evaluate('(biome_array == 12)')
+
+    #Tropical Dry Broadleaf
+    index = numexpr.evaluate('(index1236crop & index_biometropdrybroad)')
+    index_equation = index
+    hv_agb = trop_dry_broad(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Tropical Shrubland
+    index = numexpr.evaluate('(index123crop & index_biometropshrub)')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = trop_shrub(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Mediterranean Woodland
+    index = numexpr.evaluate('(index1236crop & index_biome_mediwoodland)')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = med_woodland(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+
+    #boreal index
+    index_boreal = numexpr.evaluate('(index_biomeboreal & index7090)')
+    index_equation = numexpr.evaluate('(index_equation | index_boreal)')
+    #American Boreal
+    index = numexpr.evaluate('(index_boreal & index_america)')
+    hv_agb = america_boreal(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+    #Eurasia Boreal
+    index = numexpr.evaluate('(index_boreal & index_eurasia)')
+    hv_agb = eurasia_boreal(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Asia Tropical Moist
+    index = numexpr.evaluate('index40 & index_trop_asia')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = asia_trop_moist(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Africa Tropical Moist
+    index = numexpr.evaluate('index40 & index_trop_africa')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = africa_trop_moist(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #America Tropical Moist
+    index = numexpr.evaluate('index40 & index_trop_america')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = america_trop_moist(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Temperate Broadleaf/Mixed
+    index = numexpr.evaluate('((globcover_array == 50) | (globcover_array == 60)) & (biome_array == 4)a')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = temp_broad(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Temperate Conifer
+    index = numexpr.evaluate('index7090 & (biome_array == 5)')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = temp_broad(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Freshwater Flooded
+    index = numexpr.evaluate('(globcover_array == 160)')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = temp_broad(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Saline Flooded
+    index = numexpr.evaluate('(globcover_array == 170)')
+    index_equation = numexpr.evaluate('(index_equation | index)')
+    hv_agb = temp_broad(hv_array[index])
+    apply_value(agb_array, index, hv_agb)
+
+    #Zero out FNF = 0 and Maxent > 50
+    index = numexpr.evaluate('nonforest_index & more50index')
+    agb_array[index] = 0
+
+    #Zero out FNF = 0 and no equations
+    index_noequation = np.logical_not(index_equation)
+    index = numexpr.evaluate('nonforest_index & index_noequation')
+    agb_array[index] = 0
+
 
 #Open files for reading
 fp_agb_in = open(in_agb_file, 'rb')
@@ -109,80 +221,24 @@ fp_agb_out = open(out_agb_file, 'wb')
 
 
 
-#construct mask arrays for eurasia and north america for boreal
-index_america = np.zeros(xdim,dtype=np.bool)
-index_america[:index_america.size*140//360] = 1
-index_eurasia = np.zeros(xdim,dtype=np.bool)
-index_eurasia[index_eurasia.size*140//360:] = 1
 
 
-for iBlock in range(0,ydim):
-	agb_block = np.fromfile(fp_agb_in, dtype = agb_type, count = block_pixels)
-	hv_block = np.fromfile(fp_hv_in, dtype = hv_type, count = block_pixels)
-	globcover_block = np.fromfile(fp_globcover_in, dtype = globcover_type, count = block_pixels)
-	biome_block = np.fromfile(fp_biome_in, dtype = biome_type, count = block_pixels)
-	fnf_block = np.fromfile(fp_fnf_in, dtype = fnf_type, count = block_pixels)
-
-	#-------Class masks
-	index110 = (globcover_block == 110)
-	index120 = (globcover_block == 120)
-	index130 = (globcover_block == 130)
-	index20 = (globcover_block == 20)
-	index30 = (globcover_block == 30)
-	index123 = np.logical_or(np.logical_or(index110,index120), index130)
-	index123crop = np.logical_or(np.logical_or(index20,index30),index123)
-
-	index7090 = np.logical_or((globcover_block == 70),(globcover_block == 90))
-
-	index60 = (globcover_block == 60)   #woodlands
-	index1236 = np.logical_or(index123,index60)
-
-	index_biomeboreal = (biome_block == 6)
-	index_biometropdrybroad = (biome_block == 2)
-	index_biometropshrub = (biome_block == 7)
-	index_biome_mediwoodland = (biome_block == 12)
-
-	
-	lowagb_mask = np.zeros(xdim, dtype=np.bool)
-
-	#-------Tropical Dry Broadleaf
-	index = np.logical_and(index_biometropdrybroad, index1236)
-	hv_agb = vfunc_trop_dry_broad(hv_block[index].astype(np.float64)/10000)
-	apply_value(agb_block,index,hv_agb)
-	lowagb_mask = np.logical_or(lowagb_mask, index)
-
-	#-------Tropical shrubland
-	#index = np.logical_and(index_biometropshrub, index123)
-	index = np.logical_and(index_biometropshrub, index123crop)
-	hv_agb = vfunc_trop_shrub(hv_block[index].astype(np.float64)/10000)
-	apply_value(agb_block,index,hv_agb)
-	lowagb_mask = np.logical_or(lowagb_mask, index)
-
-	#-------Mediterranean Woodland
-	index = np.logical_and(index_biome_mediwoodland,index1236)
-	hv_agb = vfunc_med_woodland(hv_block[index].astype(np.float64)/10000)
-	apply_value(agb_block,index,hv_agb)
-	lowagb_mask = np.logical_or(lowagb_mask, index)
-
-	borealindex = np.logical_and(index_biomeboreal,index7090)
-	lowagb_mask = np.logical_or(lowagb_mask, borealindex)
-	#-------America Boreal
-	index = np.logical_and(borealindex,index_america)
-	hv_agb = vfunc_america_boreal(hv_block[index].astype(np.float64)/10000)
-	apply_value(agb_block,index,hv_agb)
-
-	#-------Eurasia Boreal
-	index = np.logical_and(borealindex,index_eurasia)
-	hv_agb = vfunc_eurasia_boreal(hv_block[index].astype(np.float64)/10000)
-	apply_value(agb_block,index,hv_agb)
-
-
-        #----zero non forest and non-hv generated pixels
-	zero_mask = np.logical_and(np.logical_not(lowagb_mask),np.logical_not(fnf_block))
-	agb_block[zero_mask] = 0
-
-	#write out to file
-	agb_block.tofile(fp_agb_out)
+for iBlock in range(0,100):
+    print(iBlock)
+    agb_block = np.fromfile(fp_agb_in, dtype = agb_type, count = block_pixels)
+    agb_block.shape = (ydim//100,xdim)
+    hv_block = np.fromfile(fp_hv_in, dtype = hv_type, count = block_pixels)
+    hv_block.shape = (ydim//100,xdim)
+    globcover_block = np.fromfile(fp_globcover_in, dtype = globcover_type, count = block_pixels)
+    globcover_block.shape = (ydim//100,xdim)
+    biome_block = np.fromfile(fp_biome_in, dtype = biome_type, count = block_pixels)
+    biome_block.shape = (ydim//100,xdim)
+    fnf_block = np.fromfile(fp_fnf_in, dtype = fnf_type, count = block_pixels)
+    fnf_block.shape = (ydim//100,xdim) 
+    replace_low_value(agb_block, fnf_block, globcover_block, biome_block, hv_block)
+    
+    #write out to file
+    agb_block.tofile(fp_agb_out)
 
 
 
