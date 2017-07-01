@@ -83,20 +83,20 @@ out_agb_file = '/dataraid/global/global_maxent_agb_combined_v6_alos_lowagb_zeroe
 #----------------
 
 #construct mask arrays for eurasia and north america for boreal
-index_america = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_america = np.zeros((ydim//100,xdim),dtype=np.bool)
 index_america[:,:xdim*140//360] = 1
-index_eurasia = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_eurasia = np.zeros((ydim//100,xdim),dtype=np.bool)
 index_eurasia[:,xdim*140//360:] = 1
 
 #construct mask arrays for tropical america, africa, and asia
 
-index_trop_america = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_trop_america = np.zeros((ydim//100,xdim),dtype=np.bool)
 index_trop_america[:,:xdim*150//360] = 1
 
-index_trop_africa = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_trop_africa = np.zeros((ydim//100,xdim),dtype=np.bool)
 index_trop_africa[:,xdim*150//360:xdim*240//360] = 1
 
-index_trop_asia = np.zeros((xdim,ydim//100),dtype=np.bool)
+index_trop_asia = np.zeros((ydim//100,xdim),dtype=np.bool)
 index_trop_asia[:,xdim*240//360:] = 1
 
 
