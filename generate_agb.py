@@ -47,6 +47,7 @@ def apply_value(original_value, index, new_value):
     nonzerocount = np.count_nonzero(index)
 
     if (nonzerocount == 0):
+        print("No non-zero in index, skipping block.")
         return
 	
     if (nonzerocount != new_value.size):
@@ -132,19 +133,19 @@ def replace_low_value( agb_array, fnf_array, globcover_array, biome_array, hv_ar
     #Tropical Dry Broadleaf
     index = numexpr.evaluate('(index1236crop & index_biometropdrybroad)')
     index_equation = index
-    hv_agb = trop_dry_broad(hv_array[index])
+    hv_agb = trop_dry_broad(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Tropical Shrubland
     index = numexpr.evaluate('(index123crop & index_biometropshrub)')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = trop_shrub(hv_array[index])
+    hv_agb = trop_shrub(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Mediterranean Woodland
     index = numexpr.evaluate('(index1236crop & index_biome_mediwoodland)')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = med_woodland(hv_array[index])
+    hv_agb = med_woodland(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
 
@@ -153,53 +154,53 @@ def replace_low_value( agb_array, fnf_array, globcover_array, biome_array, hv_ar
     index_equation = numexpr.evaluate('(index_equation | index_boreal)')
     #American Boreal
     index = numexpr.evaluate('(index_boreal & index_america)')
-    hv_agb = america_boreal(hv_array[index])
+    hv_agb = america_boreal(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
     #Eurasia Boreal
     index = numexpr.evaluate('(index_boreal & index_eurasia)')
-    hv_agb = eurasia_boreal(hv_array[index])
+    hv_agb = eurasia_boreal(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Asia Tropical Moist
     index = numexpr.evaluate('index40 & index_trop_asia')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = asia_trop_moist(hv_array[index])
+    hv_agb = asia_trop_moist(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Africa Tropical Moist
     index = numexpr.evaluate('index40 & index_trop_africa')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = africa_trop_moist(hv_array[index])
+    hv_agb = africa_trop_moist(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #America Tropical Moist
     index = numexpr.evaluate('index40 & index_trop_america')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = america_trop_moist(hv_array[index])
+    hv_agb = america_trop_moist(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Temperate Broadleaf/Mixed
     index = numexpr.evaluate('((globcover_array == 50) | (globcover_array == 60)) & (biome_array == 4)')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = temp_broad(hv_array[index])
+    hv_agb = temp_broad(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Temperate Conifer
     index = numexpr.evaluate('index7090 & (biome_array == 5)')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = temp_broad(hv_array[index])
+    hv_agb = temp_broad(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Freshwater Flooded
     index = numexpr.evaluate('(globcover_array == 160)')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = temp_broad(hv_array[index])
+    hv_agb = temp_broad(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Saline Flooded
     index = numexpr.evaluate('(globcover_array == 170)')
     index_equation = numexpr.evaluate('(index_equation | index)')
-    hv_agb = temp_broad(hv_array[index])
+    hv_agb = temp_broad(hv_array[index].astype(np.float64)/10000)
     apply_value(agb_array, index, hv_agb)
 
     #Zero out FNF = 0 and Maxent > 50
