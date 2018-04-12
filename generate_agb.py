@@ -71,7 +71,7 @@ ydim = 159600
 block_pixels = np.int64(ydim//100)*xdim
 #block_pixels = xdim
 
-in_agb_file = '/dataraid/global/global_maxent_agb_combined_v6.int'
+in_agb_file = '/dataraid/global/global_maxent_agb_combined_v9.int'
 agb_type = np.int16
 in_hv_file = '/dataraid/global/alos_2007_global_3sec_hv_cut_landsatfill.int'
 hv_type = np.int16
@@ -82,7 +82,7 @@ biome_type = np.uint8
 in_fnf_file = '/dataraid/global/alos_2015_global_3sec_fnf.byt'
 fnf_type = np.uint8
 
-out_agb_file = '/dataraid/global/global_maxent_agb_combined_v6_alos_lowagb_zeroed.int'
+out_agb_file = '/dataraid/global/global_maxent_agb_combined_v9_alos_lowagb_zeroed.int'
 
 #----------------
 
